@@ -1,4 +1,5 @@
 # Let's Block Chain
+[![Build Status](https://travis-ci.com/sunzhenyucn/lets-block-chain.svg?branch=master)](https://travis-ci.com/sunzhenyucn/lets-block-chain)  
 
 `Let's Block Chain` provides a simple block-chain implementation and simple, elegant command line tool write with Golang.
 
