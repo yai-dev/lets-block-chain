@@ -1,4 +1,4 @@
-package lets_block_chain
+package lbc
 
 import (
 	"strconv"
