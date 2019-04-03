@@ -1,15 +1,19 @@
+# Language
 language: go
-
+# Go Versions
 go:
   - 1.11.x
-  - 1.12.x
   - master
-
+# Target OS Platform
 os:
   - windows
   - linux
   - osx
-
+# Environment
+env:
+  global:
+    - GO111MODULE=on
+# Script
 script:
   - make test
 
