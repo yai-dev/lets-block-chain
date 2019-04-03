@@ -5,3 +5,16 @@
 ## Prerequisites
 - Golang 1.12.1
 - GNU Make
+
+## Milestone
+
+- [x] Basic Prototype
+- [x] PoW with Hashcash
+- [x] Block Chain Persistence
+- [ ] Command-Line user interface
+- [ ] Transaction
+- [ ] Address
+- [ ] Network
+
+## Thanks
+- [Building Block-Chain in Go](https://jeiwan.cc/tags/blockchain/)
