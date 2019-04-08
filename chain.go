@@ -28,9 +28,9 @@ type (
 
 // NewBlockChain will return a new block-chain,
 // the first block will be Genesis Block
-func NewBlockChain() *BlockChain {
+func NewBlockChain(dbPath string) *BlockChain {
 	var _tip []byte
-	_db, err := bolt.Open(dbFilePath, dbFilePerm, nil)
+	_db, err := bolt.Open(dbPath, dbFilePerm, nil)
 
 	err = _db.Update(func(tx *bolt.Tx) error {
 		_bkt := tx.Bucket([]byte(blocksBucketName))
@@ -100,15 +100,15 @@ func (bc *BlockChain) AddBlock(data string) {
 	}
 }
 
-// iterator used for iteration block chain
-func (bc *BlockChain) iterator() *blockChainIterator {
+// Iterator used for iteration block chain
+func (bc *BlockChain) Iterator() *blockChainIterator {
 	return &blockChainIterator{
 		currentHash: bc.tip,
 		db:          bc.db,
 	}
 }
 
-// Next block in spec iterator's block chain
+// Next block in spec Iterator's block chain
 func (i *blockChainIterator) Next() *Block {
 	var _b *Block
 

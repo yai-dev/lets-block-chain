@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewBlockChain(t *testing.T) {
-	chain := NewBlockChain()
+	chain := NewBlockChain(dbFilePath)
 	defer func() {
 		if err := chain.db.Close(); err != nil {
 			t.Fatalf("Close chain failure with error: %s", err)
@@ -16,7 +16,7 @@ func TestNewBlockChain(t *testing.T) {
 }
 
 func TestBlockChain_AddBlock(t *testing.T) {
-	chain := NewBlockChain()
+	chain := NewBlockChain(dbFilePath)
 	defer func() {
 		if err := chain.db.Close(); err != nil {
 			t.Fatalf("Close chain failure with error: %s", err)
@@ -26,11 +26,11 @@ func TestBlockChain_AddBlock(t *testing.T) {
 	chain.AddBlock("Dota 2")
 	t.Logf("Block Chain: `%+v`", chain)
 
-	iterator := chain.iterator()
+	iterator := chain.Iterator()
 	for {
 		block := iterator.Next()
 
-		pow := newProofWork(block)
+		pow := NewProofWork(block)
 		t.Logf("\nPrev block hash: %x\nData: %s\nHash: %x\nPoW: %s\n",
 			block.Prev,
 			block.Data,

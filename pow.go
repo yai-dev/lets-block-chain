@@ -27,8 +27,8 @@ type ProofOfWork struct {
 	target *big.Int
 }
 
-// newProofWork will create pow for spec block
-func newProofWork(b *Block) *ProofOfWork {
+// NewProofWork will create pow for spec block
+func NewProofWork(b *Block) *ProofOfWork {
 	_target := big.NewInt(1)
 	_target.Lsh(_target, uint(256-targetBits))
 	return &ProofOfWork{

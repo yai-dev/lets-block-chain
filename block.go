@@ -47,7 +47,7 @@ func NewBlock(data string, prev []byte) *Block {
 		Nonce:     0,
 	}
 
-	_pow := newProofWork(_block)
+	_pow := NewProofWork(_block)
 	nonce, hash := _pow.Run()
 
 	_block.Nonce = nonce
