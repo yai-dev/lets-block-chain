@@ -1,15 +1,18 @@
 package lbc
 
 import (
+	"encoding/hex"
 	"fmt"
+
 	"github.com/boltdb/bolt"
 )
 
 const (
-	dbFilePath       = "./lbc.db"
-	dbFilePerm       = 0666
-	blocksBucketName = "__blocks__"
-	lastBlockKey     = "__l__"
+	dbFilePath          = "./db/lbc.db"
+	dbFilePerm          = 0666
+	blocksBucketName    = "__blocks__"
+	lastBlockKey        = "__l__"
+	genesisCoinBaseData = `Alibaba's Jack Ma Again Endorses China's '996' Overtime Culture as Testament to Professional Passion`
 )
 
 type (
@@ -28,15 +31,15 @@ type (
 
 // NewBlockChain will return a new block-chain,
 // the first block will be Genesis Block
-func NewBlockChain(dbPath string) *BlockChain {
+func NewBlockChain(address string) *BlockChain {
 	var _tip []byte
-	_db, err := bolt.Open(dbPath, dbFilePerm, nil)
+	_db, err := bolt.Open(dbFilePath, dbFilePerm, nil)
 
 	err = _db.Update(func(tx *bolt.Tx) error {
 		_bkt := tx.Bucket([]byte(blocksBucketName))
 
 		if _bkt == nil {
-			genesis := newGenesisBlock()
+			genesis := newGenesisBlock(NewCoinBaseTX(address, genesisCoinBaseData))
 			_bkt, err = tx.CreateBucket([]byte(blocksBucketName))
 
 			err = _bkt.Put(genesis.Hash, genesis.serialize())
@@ -67,7 +70,7 @@ func NewBlockChain(dbPath string) *BlockChain {
 }
 
 // AddBlock to this chain
-func (bc *BlockChain) AddBlock(data string) {
+func (bc *BlockChain) AddBlock(transactions []*Transaction) {
 	var lHash []byte
 
 	// need get last block's hash
@@ -77,7 +80,7 @@ func (bc *BlockChain) AddBlock(data string) {
 		return nil
 	})
 
-	_newBlock := NewBlock(data, lHash)
+	_newBlock := NewBlock(transactions, lHash)
 
 	err = bc.db.Update(func(tx *bolt.Tx) error {
 		_bkt := tx.Bucket([]byte(blocksBucketName))
@@ -98,6 +101,95 @@ func (bc *BlockChain) AddBlock(data string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// FindUnspentTransactions will find the transactions include the unspent
+// transaction output, unspent transaction output represent that these
+// transaction output has not been referenced in any transaction include yet
+func (bc *BlockChain) FindUnspentTransactions(addr string) []Transaction {
+	var unspentTXs []Transaction
+	spentTXOutputs := make(map[string][]int)
+	iterator := bc.Iterator()
+
+	for {
+		_block := iterator.Next()
+
+		for _, tx := range _block.Transactions {
+			txID := hex.EncodeToString(tx.ID)
+
+		Outputs:
+			for outIdx, out := range tx.VOut {
+				if spentTXOutputs[txID] != nil {
+					for _, spentOut := range spentTXOutputs[txID] {
+						if spentOut == outIdx {
+							continue Outputs
+						}
+					}
+				}
+
+				if out.CanBeUnlockedWith(addr) {
+					unspentTXs = append(unspentTXs, *tx)
+				}
+			}
+
+			if !tx.isCoinBaseTx() {
+				for _, in := range tx.VIn {
+					if in.CanUnlockOutputWith(addr) {
+						inTxID := hex.EncodeToString(in.TxID)
+						spentTXOutputs[inTxID] = append(spentTXOutputs[inTxID], in.VOut)
+					}
+				}
+			}
+		}
+
+		if len(_block.Prev) == 0 {
+			break
+		}
+	}
+
+	return unspentTXs
+}
+
+// FindSpendableOutputs will find the all spendable outputs in current chain, and ensure that
+// they store enough value
+func (bc *BlockChain) FindSpendableOutputs(addr string, amount int) (int, map[string][]int) {
+	unspentOutputs := make(map[string][]int)
+	unspentTXs := bc.FindUnspentTransactions(addr)
+	accumulated := 0
+
+Work:
+	for _, tx := range unspentTXs {
+		txID := hex.EncodeToString(tx.ID)
+
+		for outIdx, out := range tx.VOut {
+			if out.CanBeUnlockedWith(addr) && accumulated < amount {
+				accumulated += out.Value
+				unspentOutputs[txID] = append(unspentOutputs[txID], outIdx)
+
+				if accumulated >= amount {
+					break Work
+				}
+			}
+		}
+	}
+
+	return accumulated, unspentOutputs
+}
+
+// FindUTXO will find the specified address's unspent transaction outputs
+func (bc *BlockChain) FindUTXO(addr string) []TXOutput {
+	var UTXOs []TXOutput
+	unspentTransactions := bc.FindUnspentTransactions(addr)
+
+	for _, tx := range unspentTransactions {
+		for _, out := range tx.VOut {
+			if out.CanBeUnlockedWith(addr) {
+				UTXOs = append(UTXOs, out)
+			}
+		}
+	}
+
+	return UTXOs
 }
 
 // Iterator used for iteration block chain
@@ -122,4 +214,11 @@ func (i *blockChainIterator) Next() *Block {
 	i.currentHash = _b.Prev
 
 	return _b
+}
+
+// CLose block chain
+func (bc *BlockChain) Close() {
+	if err := bc.db.Close(); err != nil {
+		panic("Close block chain error!")
+	}
 }

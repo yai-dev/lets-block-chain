@@ -2,6 +2,7 @@ package lbc
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
 	"time"
@@ -9,20 +10,19 @@ import (
 
 // built-in block version
 const (
-	blockVersion     = 1
-	genesisBlockData = "Genesis Block"
+	blockVersion = 1
 )
 
 // Block represents a block in block-chain
 type Block struct {
-	// payload stored in this block
-	Data []byte
 	// previous block 32bit hash
 	Prev []byte
 	// 32bit hash for this block
 	Hash []byte
 	// created time for this block
 	Timestamp int64
+	// Transactions for this block
+	Transactions []*Transaction
 	// block version number
 	Version int32
 	// block nonce
@@ -32,19 +32,19 @@ type Block struct {
 // newGenesisBlock will generate a genesis block,
 // block data will be constant data,
 // genesis block's prev is nil
-func newGenesisBlock() *Block {
-	return NewBlock(genesisBlockData, []byte{})
+func newGenesisBlock(coinBaseTx *Transaction) *Block {
+	return NewBlock([]*Transaction{coinBaseTx}, []byte{})
 }
 
 // NewBlock will create a new block with spec data and prev block hash
-func NewBlock(data string, prev []byte) *Block {
+func NewBlock(transactions []*Transaction, prev []byte) *Block {
 	_block := &Block{
-		Timestamp: time.Now().Unix(),
-		Data:      []byte(data),
-		Prev:      prev,
-		Hash:      []byte{},
-		Version:   blockVersion,
-		Nonce:     0,
+		Timestamp:    time.Now().Unix(),
+		Transactions: transactions,
+		Prev:         prev,
+		Hash:         []byte{},
+		Version:      blockVersion,
+		Nonce:        0,
 	}
 
 	_pow := NewProofWork(_block)
@@ -65,6 +65,17 @@ func (b *Block) serialize() []byte {
 	}
 
 	return blobBuf.Bytes()
+}
+
+// hash all transactions in this block
+func (b *Block) hashTransactions() []byte {
+	var txHashes [][]byte
+
+	for _, tx := range b.Transactions {
+		txHashes = append(txHashes, tx.ID)
+	}
+	txHash := sha256.Sum256(bytes.Join(txHashes, []byte{}))
+	return txHash[:]
 }
 
 // deserializeBlock to block struct with spec bytes array

@@ -14,8 +14,9 @@
 - [x] Basic Prototype
 - [x] PoW with Hashcash
 - [x] Block Chain Persistence
-- [x] Command-Line user interface `[with init/add/print]`
+- [x] Command-Line user interface `[with send/get balance/print]`
 - [ ] Transaction
+  - [x] Transaction prototype, send and get balance.
 - [ ] Address
 - [ ] Network
 

@@ -3,6 +3,7 @@ package lbc
 import "testing"
 
 func TestNewBlock(t *testing.T) {
-	block := NewBlock("TestBlock", []byte{})
-	t.Logf("\nPrev Hash: `%x`\nData: `%s`\nHash: `%x`\n", block.Prev, block.Data, block.Hash)
+	transactions := []*Transaction{NewCoinBaseTX("Candy Ye", "Gavin Sun")}
+	block := NewBlock(transactions, []byte{})
+	t.Logf("\nPrev Hash: `%x`\nTransaction Num: `%d`\nHash: `%x`\n", block.Prev, len(block.Transactions), block.Hash)
 }
